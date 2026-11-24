@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "URY POS Demo"
+description = "An image-led point-of-sale demo for URY, with a searchable product catalog, category filtering, a live cart, and a simulated checkout flow."
+version = "1.0.0"
+id = "artifacts/ury-pos-demo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23613
+
+[services.development]
+run = "pnpm --filter @workspace/ury-pos-demo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ury-pos-demo", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ury-pos-demo/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23613"
+BASE_PATH = "/"

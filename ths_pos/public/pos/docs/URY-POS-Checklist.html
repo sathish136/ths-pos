@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>URY POS - Checklist Status</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 Arial, Helvetica, sans-serif; color: #1f2937; background: #f3f4f6; }
+  header { background: #1f2937; color: #fff; padding: 16px 20px; }
+  header h1 { margin: 0 0 4px; font-size: 18px; }
+  header p { margin: 0; color: #d1d5db; font-size: 12px; }
+  .wrap { padding: 16px 20px 40px; }
+  .note { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 12px; border-radius: 4px; margin-bottom: 14px; font-size: 13px; }
+  .cards { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .card { background: #fff; border: 1px solid #d1d5db; border-radius: 4px; padding: 10px 14px; min-width: 140px; }
+  .card small { display: block; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .card strong { font-size: 22px; }
+  .card.ok strong { color: #065f46; }
+  .card.warn strong { color: #92400e; }
+  .card.bad strong { color: #991b1b; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .toolbar input { font: inherit; padding: 6px 8px; border: 1px solid #9ca3af; border-radius: 3px; background: #fff; min-width: 260px; }
+  .toolbar button { font: inherit; padding: 6px 10px; border: 1px solid #9ca3af; background: #fff; border-radius: 3px; cursor: pointer; }
+  .toolbar button.on { background: #1f2937; color: #fff; border-color: #1f2937; }
+  .hint { color: #6b7280; font-size: 12px; margin-left: auto; }
+  .sheet { overflow: auto; background: #fff; border: 1px solid #d1d5db; max-height: calc(100vh - 280px); }
+  table { border-collapse: collapse; width: 100%; min-width: 1100px; }
+  thead th { position: sticky; top: 0; background: #e5e7eb; z-index: 2; text-align: left; font-size: 12px; padding: 8px; border: 1px solid #d1d5db; }
+  th.now-col { background: #bbf7d0; }
+  td { vertical-align: top; padding: 7px 8px; border: 1px solid #e5e7eb; font-size: 13px; }
+  tr.section td { background: #1f2937; color: #fff; font-weight: 700; padding: 9px 8px; border-color: #1f2937; }
+  td.c, th.c { text-align: center; white-space: nowrap; }
+  td.no { width: 46px; color: #6b7280; }
+  td.req { width: 34%; }
+  td.ev { width: 26%; color: #374151; }
+  td.gap { width: 22%; color: #374151; }
+  td.now-col { background: #f0fdf4; }
+  .pill { display: inline-block; min-width: 68px; text-align: center; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: 700; }
+  .Yes { background: #d1fae5; color: #065f46; }
+  .Partial { background: #fef3c7; color: #92400e; }
+  .No { background: #fee2e2; color: #991b1b; }
+  .muted { opacity: .55; }
+  .changed { color: #1d4ed8; font-weight: 700; }
+  tr.hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>URY POS - Checklist status</h1>
+  <p>Updated 17 Nov 2026. Look at the <b>Now</b> column only for current status. Before = old audit on 16 Nov (for history).</p>
+</header>
+<div class="wrap">
+  <div class="note">
+    Current status: <b>58 Yes</b> · <b>0 Partial</b> · <b>0 No</b> out of 58 items.
+    Partial now is <b>0</b>. Yellow / Partial in the Before column is the old audit only — ignore it for progress.
+  </div>
+  <div class="cards">
+    <div class="card"><small>Items</small><strong id="cTotal">58</strong></div>
+    <div class="card ok"><small>Yes now</small><strong id="cYes">58</strong></div>
+    <div class="card warn"><small>Partial now</small><strong id="cPartial">0</strong></div>
+    <div class="card bad"><small>No now</small><strong id="cNo">0</strong></div>
+    <div class="card"><small>Changed today</small><strong id="cChanged">46</strong></div>
+  </div>
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Search requirement, evidence, gap...">
+    <button data-f="all" class="on">All</button>
+    <button data-f="Yes">Yes</button>
+    <button data-f="Partial">Partial</button>
+    <button data-f="No">No</button>
+    <button data-f="changed">Changed today</button>
+    <span class="hint">Filter uses the Now column. Source: URY-POS-Checklist-Status.xlsx</span>
+  </div>
+  <div class="sheet">
+    <table>
+      <thead>
+        <tr>
+          <th class="no">#</th>
+          <th>Requirement</th>
+          <th class="c">Before<br><span style="font-weight:400;color:#6b7280">(old audit)</span></th>
+          <th class="c now-col">Now<br><span style="font-weight:400">(current)</span></th>
+          <th class="c">Changed</th>
+          <th>Current POS behaviour / evidence</th>
+          <th>Gap still open</th>
+        </tr>
+      </thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+const ROWS = [{"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "1", "req": "How to create a Cash Supervisor or Cashier Admin account and assign permissions and authorities.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Staff accounts (name, role, PIN, active) in Admin; Cash Supervisor role with shift and close-shift rights; permissions matrix per role.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "2", "req": "How to create a Cashier1 & 2 account and assign permissions and authorities.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Cashier 2 role; named staff accounts; permissions matrix in Admin.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "3", "req": "How to create a Captains account and assign permissions and authorities.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Captain accounts with their own PIN; permissions matrix in Admin.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "4", "req": "How to create a Call Center account for takeaway and delivery orders & online sales and assign permissions and authorities.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Call Center role and accounts; permissions matrix in Admin.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "5", "req": "How to create kitchen sections and assign screens and printers to them.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Admin > Kitchen sections: sections, categories, printer labels; Expo board has a tab per section.", "gap": "Chits print through the browser; no direct network-printer driver."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "6", "req": "How to log in to the admin account.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Manager PIN 3333.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "7", "req": "How to log in to the cashier account.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Cashier PIN 2222.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "8", "req": "How to log in to the Captains account.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Captain PIN 1111.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "9", "req": "Menu layout in the accountant dashboard, how to add a meal to the system, set different prices based on the sales type, and link the recipe.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Admin > Menu: price per sales type (Dine in, Takeaway, Delivery) used at billing; availability toggle. Recipe link on Recipes tab.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "10", "req": "How to manage the menu and create Combo 1, Combo 2, etc., with different prices and options for customers to choose from within limits we set.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Combos with min/max option groups and combo price; defined in Admin > Combos.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "11", "req": "Menu layout on the cashier screen and how to manage available and unavailable items.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Admin > Menu: Available toggle hides a dish on cashier and captain screens.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "12", "req": "Menu layout in the accountant dashboard, how to add tables and dining areas, change their positions, shapes, colors, and number of seats, change the screen background, add meals to the system, set different prices based on the sales type, and link recipes.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Admin > Floor: table name, zone, seats, shape, X/Y position and colour; floor background colour; per-sales-type menu prices.", "gap": "Table shapes: round, square, rectangle, bar. Screen button layout is not customisable (see item D)."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "13", "req": "How to open a table.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Seat table / open order from Floor or Seating.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "14", "req": "How to enter the number of guests seated at a table.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Party size on table open.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "15", "req": "How to add a meal to a table.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Tap dish on Floor; qty +/-.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "16", "req": "How to add notes to a meal.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Line notes on ticket.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "17", "req": "How to send a food order from a table.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Send to kitchen (KDS + optional chit print).", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "18", "req": "Kitchen screen layout and how cashier or captain orders appear with notes.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "KDS shows ticket, table and notes.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "19", "req": "How the kitchen accepts an order, starts preparing it, and tracks preparation time.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Start preparing; SLA timer (15 min) with at-risk / late.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "20", "req": "How the kitchen marks a meal as ready for pickup by the waiter or captain.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Mark ready; captain serves to table.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "21", "req": "How the kitchen rejects a meal because it is not ready, unavailable, or for any other reason, and suggests an alternative meal to the captain.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Kitchen reject asks for a reason and suggests an alternative to the captain.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "22", "req": "How to cancel a meal from a table before closing the bill.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Cancel button per dish with a required reason; logged to Voids & cancels. Sent items need Cash Supervisor or Manager.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "23", "req": "How to apply a discount to an item on the bill.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Manager % discount per line with required reason.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "24", "req": "How to apply a discount to the entire bill.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Manager sets percent or fixed discount with reason; applied before tax; shown on totals and tax invoice; saved on each sale.", "gap": "Discount report column still to add."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "25", "req": "How to move a table to a new location and change its table number.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Admin > Floor: change table number and position. Dishes move between tables from Floor.", "gap": "Rename only while a table is free, so open tickets stay linked."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "26", "req": "How to merge two tables.", "before": "Yes", "now": "Yes", "changed": "No", "evidence": "Merge tables (Seating) moves items and seats.", "gap": ""}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "27", "req": "How to split one table into two separate tables and move items based on the customer's choice.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Move dishes from a table to an existing table or a new table (type a new name) from Floor.", "gap": "Split is per dish quantity; splitting one bill between guests is the separate Split bill action."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "28", "req": "How to pay a bill using multiple payment methods at the same time (cash, card, loyalty card, or discount card).", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Cash, card, credit and loyalty tenders can be combined on one bill.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "29", "req": "How to split a bill into multiple payments so each customer pays for specific meals and add a tip & close the bill.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Split bill per customer; tip on payment; bill closes with tip recorded.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "30", "req": "How to create a home delivery order from the call center.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Call Center delivery order with customer name, address, phone and channel.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "31", "req": "How to enter the customer's name, address, phone number, and delivery driver's name for a delivery order.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Driver name field on the delivery ticket; shown on the guest print.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "32", "req": "How to keep a delivery order open until the customer chooses the payment method upon delivery, split the payment between cash and card, and add a tip.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Driver name required before payment on delivery; cash/card split and tip at collection; driver shown on receipt.", "gap": "No separate rider run-sheet screen; collection happens from the delivery ticket."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "33", "req": "How to create a takeaway order or schedule a pickup order in advance from the call center.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Takeaway and scheduled pickup time from Call Center.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "34", "req": "How to create a credit invoice in the POS system, enter customer details, and open a credit sales account using the 'Create Tax Invoice' button.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Create Tax Invoice button issues a tax invoice with customer details.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "35", "req": "How to assign permissions for users who can use the 'Create Tax Invoice' button.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "invoice.tax permission controls who can create tax invoices.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "36", "req": "How to close the daily cashier session and show a warning if another cashier session is still open.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Close-shift warns about open tickets and other signed-in cashier/supervisor stations.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "37", "req": "Daily POS sales report showing sales by type (takeaway, delivery, online, and dine-in), including the number and total value of paid and credit orders.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Sales by type with paid and credit counts and totals.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "38", "req": "Daily POS sales report showing discounts, cancellations, and tips for each captain, including the number and total value.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Voids & cancels report lists each cancel with captain, reason and who cancelled; Discounts & tips per staff.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "39", "req": "Daily POS sales report showing the quantity and total value of sold items by item and category.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Sold items by item and by category (quantity and value).", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "40", "req": "Daily POS sales report for each captain, showing total sales, sold items by quantity and value, number and numbers of open tables, and total number of customers served.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Captains report: open tables, covers, sales, items, discounts and cancels per captain; CSV.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "41", "req": "How to view sales invoice reports by a specific date or date range, by invoice or item.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Invoices tab: search by date or invoice number.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "42", "req": "How to search for an invoice by date.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Invoice search by date in Reports > Invoices.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "43", "req": "How to search for an invoice by invoice number.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Invoice search by invoice number.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "44", "req": "How to reprint a searched invoice.", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Reprint from invoice search.", "gap": "None."}, {"section": "Some points to review in the POS system and their impact on the accounts, on a daily basis.", "no": "45", "req": "Daily credit sales report by customer, showing the number and total value of invoices, with an option to print invoice details.", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Credit report by customer: invoice count, totals, print.", "gap": "None."}, {"section": "Some General Inquiries About the System", "no": "A", "req": "Can the data display templates be customized, such as account statement templates, with the ability to compare and reconcile two accounts?", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Statements tab: two accounts side by side, balance difference, invoices on one account only, payments on account, printable statement.", "gap": "Statement layout is one template (Admin > Statement template)."}, {"section": "Some General Inquiries About the System", "no": "B", "req": "Can all reports and statements be exported? Are there any that cannot be exported?", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "CSV on invoices, category, discounts, captains, voids & cancels, statements, reconcile and credit tabs; sales CSV uses chosen columns; backup JSON.", "gap": "PDF and Excel formats not built."}, {"section": "Some General Inquiries About the System", "no": "C", "req": "Can the Excel export template be customized?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Admin > Excel export template: choose columns, rename headers, reorder, download .xls; Reports has Excel button.", "gap": "None."}, {"section": "Some General Inquiries About the System", "no": "D", "req": "Can tasks and button names, positions, and functions be customized on the main and sub-screens?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Admin > Buttons & tabs: rename, reorder, show/hide navigation buttons.", "gap": "None."}, {"section": "Some General Inquiries About the System", "no": "E", "req": "Can we provide our own templates for the system to display data based on them?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Admin > Display templates: edit receipt, tax invoice, kitchen chit, statement and custom layouts with placeholders.", "gap": "None."}, {"section": "Some General Inquiries About the System", "no": "F", "req": "Can we create custom notifications by choosing what appears, when and where it appears, and link them to real-time data?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Notification rules: trigger, threshold, screen target and message with live placeholders; shared inbox reaches every device.", "gap": "Triggers are the fixed POS events; no free-form data queries."}, {"section": "Some General Inquiries About the System", "no": "G", "req": "Can the system be connected to our own external apps for read-only access, without allowing any changes to the data?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "GET /api/readonly/sales with Bearer token; no write routes.", "gap": "Token is a demo default; change it in Admin."}, {"section": "Some General Inquiries About the System", "no": "H", "req": "Can we download a backup of our data to a computer of our choice?", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Admin > Backup: download JSON backup; restore with confirmation.", "gap": "None."}, {"section": "Some General Inquiries About the System", "no": "I", "req": "Can the backup be customized using specific templates so other systems of our choice can read the data?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Admin > Backup templates: URY JSON, flat CSV, ERPNext-style JSON, custom-mapped JSON (Excel headers as field names).", "gap": "Restore accepts URY JSON v1 only."}, {"section": "Some General Inquiries About the System", "no": "J", "req": "What is the backup file format?", "before": "Partial", "now": "Yes", "changed": "Yes", "evidence": "Documented in public/docs/BACKUP-FORMAT.md (ury-pos-backup v1).", "gap": "None."}, {"section": "Some General Inquiries About the System", "no": "K", "req": "Can we store documents and attachments in the cloud through the same system and link them to accounting entries?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Attachments go to an S3-compatible bucket (AWS S3, MinIO, R2 and similar) set by server environment variables; local disk otherwise.", "gap": "Request signing checked against AWS's published test vector; not yet live-tested. Needs your bucket and keys."}, {"section": "Some General Inquiries About the System", "no": "L", "req": "Can we use a storage service or company of our choice to store attachments and invoice images and link it to the system?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Admin > Attachment storage provider: local disk or S3-compatible (AWS/MinIO/R2/Wasabi). Keys saved on the POS server only.", "gap": "Needs your bucket and keys for a live S3 test."}, {"section": "Some General Inquiries About the System", "no": "M", "req": "Can we download previously uploaded invoices, attachments, and documents from the cloud, and print or share them?", "before": "No", "now": "Yes", "changed": "Yes", "evidence": "Attachments list and download from Admin, from the configured storage provider.", "gap": "Same as K: needs your bucket and keys for a live test."}];
+const body = document.getElementById('body');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+let filter = 'all', query = '';
+let lastSection = null;
+let html = '';
+ROWS.forEach((r, i) => {
+  if (r.section !== lastSection) {
+    html += `<tr class="section" data-sec="1"><td colspan="7">${esc(r.section)}</td></tr>`;
+    lastSection = r.section;
+  }
+  html += `<tr data-i="${i}" data-now="${esc(r.now)}" data-changed="${esc(r.changed)}">
+    <td class="no">${esc(r.no)}</td>
+    <td class="req">${esc(r.req)}</td>
+    <td class="c muted"><span class="pill ${esc(r.before)}">${esc(r.before)}</span></td>
+    <td class="c now-col"><span class="pill ${esc(r.now)}">${esc(r.now)}</span></td>
+    <td class="c ${r.changed==='Yes'?'changed':''}">${esc(r.changed)}</td>
+    <td class="ev">${esc(r.evidence)}</td>
+    <td class="gap">${esc(r.gap)}</td>
+  </tr>`;
+});
+body.innerHTML = html;
+
+function refresh() {
+  let yes=0, partial=0, no=0, changed=0;
+  ROWS.forEach(r => { if(r.now==='Yes')yes++; else if(r.now==='Partial')partial++; else no++; if(r.changed==='Yes')changed++; });
+  document.getElementById('cTotal').textContent = ROWS.length;
+  document.getElementById('cYes').textContent = yes;
+  document.getElementById('cPartial').textContent = partial;
+  document.getElementById('cNo').textContent = no;
+  document.getElementById('cChanged').textContent = changed;
+}
+function applyFilter() {
+  const q = query.toLowerCase();
+  document.querySelectorAll('tr[data-i]').forEach(tr => {
+    const r = ROWS[+tr.dataset.i];
+    const text = (r.no+' '+r.req+' '+r.evidence+' '+r.gap).toLowerCase();
+    const okQ = !q || text.includes(q);
+    const okF = filter==='all' || (filter==='changed' ? r.changed==='Yes' : r.now===filter);
+    tr.classList.toggle('hidden', !(okQ && okF));
+  });
+  document.querySelectorAll('tr.section').forEach(sec => {
+    let n = sec.nextElementSibling, visible = false;
+    while (n && !n.classList.contains('section')) { if(!n.classList.contains('hidden')) visible = true; n = n.nextElementSibling; }
+    sec.classList.toggle('hidden', !visible);
+  });
+}
+document.getElementById('q').addEventListener('input', e => { query = e.target.value; applyFilter(); });
+document.querySelectorAll('.toolbar button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.toolbar button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); filter = b.dataset.f; applyFilter();
+}));
+refresh(); applyFilter();
+</script>
+</body>
+</html>
